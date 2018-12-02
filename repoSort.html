@@ -1,0 +1,120 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Github Repo</title>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+</head>
+<body>
+<div style='border:1px solid #ccc;width:500px;height:500px;margin:0 auto;'>
+<h3><center>Github Repositories</center></h3>
+<table id="repos" style='margin : 10px;width:80%;'>
+    <tr  >
+        <th style='border:1px solid #000'>Language</th>
+		 <th style='border:1px solid #000'>Size</th>
+         <th style='border:1px solid #000'>Count</th>
+    </tr>
+	<tbody id="dataloader"></tbody>
+</table>
+<div style="margin:10px">
+<button type="submit" onclick="return loadData(--page,'size')" value="">Previous</button>
+<button type="submit" onclick="return loadData(++page,'size')" value="">Next</button>
+
+<button type="submit" onclick="return loadData(page,'size')" value="">Sort by Size</button>
+
+<button type="submit" onclick="return loadData(page,'count')" value="">Sort by Count</button>
+</div>
+</div>
+<script>
+var page =1;
+$(document).ready(function(){
+
+    jQuery.support.cors = true;
+
+    loadData(page,'size');
+})
+function loadData(page, sortParam){
+	$("#dataloader").empty();
+	if(page < 1) { 
+				$("#dataloader").append( "<tr><td colspan=3 style='border:1px solid #ccc'>No data found</td></tr>");
+				return;} 
+	$.ajax(
+    {
+        type: "GET",
+		// using github api to get most popular using sort by stars 
+        url: 'https://api.github.com/search/repositories?q=is:public%20org:github&sort=stars&order=desc&page='+page+'&per_page=200',
+        
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        cache: false,
+        success: function (data) {
+			var count = [];
+			var size = [];
+			// parsing data
+			for(i=0;i<data.items.length;i++){
+				var item=data.items[i];
+				var index = "Not specified";
+				if(item.language !=null) {
+					index = item.language;
+				}
+				// loading count based on language
+					if(count[index]!=null){
+						count[index] = count[index] + 1;
+					} else {
+						count[index] = 1;
+					}
+				// loading size based on language
+					if(size[index]!=null){
+						size[index] = size[index]+item.size;
+					} else {
+						size[index] = item.size;
+					}
+				
+			}
+			
+			// sorting based on count
+			if(sortParam=='count'){
+				var sortAr = [];
+				for (var key in count) sortAr.push([key, count[key]]);
+				sortAr.sort(function(a, b) {
+					return b[1] - a[1];
+				});
+			} else if(sortParam=='size'){
+			// sorting based on size
+				var sortAr = [];
+				for (var key in size) sortAr.push([key, size[key]]);
+				sortAr.sort(function(a, b) {
+					return b[1] - a[1];
+				});
+			}
+			
+			
+			// display array in table
+			var displayed = false;
+			for (var i = 0; i < sortAr.length; i++) {
+				var key = sortAr[i][0];
+				var value = sortAr[i][1];
+				displayed=true;
+				$("#dataloader").append(
+                    "<tr >"
+                      +"<td  style='border:1px solid #ccc'>"+key+"</td>"
+                      +"<td  style='border:1px solid #ccc;text-align:right'>"+size[key]+"</td>"
+					   +"<td  style='border:1px solid #ccc;text-align:right'>"+count[key]+"</td>"
+                    +"</tr>" );
+                
+			}
+			if(!displayed){
+				$("#dataloader").append( "<tr><td colspan=3  style='border:1px solid #ccc'>No data found</td></tr>");
+			}
+        },        
+        error: function (msg) {
+            
+            alert(msg.responseText);
+        }
+    });
+}
+</script>
+
+</html>
